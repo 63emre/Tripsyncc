@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EOTrip - Seyahat Uygulaması
 
-## Getting Started
+EOTrip, seyahat planlaması ve konaklama rezervasyonu yapmak için geliştirilmiş modern bir web uygulamasıdır. Kullanıcılar, dünyanın dört bir yanındaki destinasyonları keşfedebilir, konaklama yerleri arayabilir ve rezervasyon yapabilir.
 
-First, run the development server:
+## Özellikler
+
+- Kullanıcı kaydı ve girişi
+- Destinasyon arama ve filtreleme
+- Popüler destinasyonlar
+- Destinasyon detayları ve fotoğraf galerisi
+- Rezervasyon yapma
+- Kullanıcı profili yönetimi
+- Arkadaş ekleme ve sosyal etkileşim
+- Konaklama yeri ilan etme
+
+## Teknolojiler
+
+- [Next.js 14](https://nextjs.org/)
+- [React](https://reactjs.org/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+
+## Kurulum
+
+Projeyi yerel makinenizde çalıştırmak için aşağıdaki adımları izleyin:
 
 ```bash
+# Repoyu klonlayın
+git clone https://github.com/username/eotrip.git
+cd eotrip
+
+# Bağımlılıkları yükleyin
+npm install
+
+# Geliştirme sunucusunu başlatın
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Tarayıcınızda [http://localhost:3000](http://localhost:3000) adresine giderek uygulamayı görebilirsiniz.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Uygulama Sayfaları
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Giriş Sayfası**: /login
+2. **Kayıt Sayfası**: /signup
+3. **Ana Sayfa**: /home
+4. **Arama Sonuçları**: /search
+5. **Destinasyon Detayları**: /destination/[id]
+6. **Profil Sayfası**: /profile
+7. **Arkadaşlar Sayfası**: /friends
+8. **Yeni İlan Ekleme**: /listing/new
 
-## Learn More
+## Ekran Görüntüleri
 
-To learn more about Next.js, take a look at the following resources:
+[Ekran görüntüleri buraya eklenecek]
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Notlar
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Bu uygulama, sadece ön yüz (frontend) geliştirmesi içerir ve gerçek bir veritabanına bağlı değildir. Veriler, uygulamanın içinde bulunan dummy verilerden gelir.
 
-## Deploy on Vercel
+## Türkiye'deki Özel İçerikler
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Türkiye'deki bayram ve etkinlik takvimi
+- Yozgat şehrindeki önemli turistik yerler
+- Türkiye'nin popüler turistik bölgeleri
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Lisans
+
+MIT

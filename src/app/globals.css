@@ -1,26 +1,525 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 245, 247, 250;
+  --background-end-rgb: 255, 255, 255;
+
+  /* New color scheme - Teal/Blue theme */
+  --primary-hue: 190; /* Teal */
+  --secondary-hue: 220; /* Blue */
+
+  --primary: hsl(var(--primary-hue), 85%, 45%);
+  --primary-light: hsl(var(--primary-hue), 85%, 65%);
+  --primary-dark: hsl(var(--primary-hue), 85%, 35%);
+
+  --secondary: hsl(var(--secondary-hue), 80%, 55%);
+  --secondary-light: hsl(var(--secondary-hue), 80%, 70%);
+  --secondary-dark: hsl(var(--secondary-hue), 80%, 40%);
+
+  --text-color: hsl(var(--secondary-hue), 10%, 15%);
+  --text-light: hsl(var(--secondary-hue), 10%, 40%);
+  --text-lighter: hsl(var(--secondary-hue), 10%, 60%);
+
+  --background: hsl(var(--primary-hue), 20%, 98%);
+  --card-bg: #ffffff;
+  --input-bg: #ffffff;
+  --border-color: hsl(var(--primary-hue), 15%, 88%);
+  --shadow-color: 190, 70%, 40%;
+  --card-shadow: 0 4px 12px hsla(var(--shadow-color), 0.08);
+  --card-shadow-hover: 0 6px 16px hsla(var(--shadow-color), 0.15);
+
+  /* Map colors */
+  --map-marker: var(--primary);
+  --map-marker-shadow: rgba(0, 0, 0, 0.2);
+  --map-popup-bg: var(--card-bg);
+}
+
+[data-theme="dark"] {
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 15, 23, 36;
+  --background-end-rgb: 25, 35, 50;
+
+  --primary: hsl(var(--primary-hue), 65%, 60%);
+  --primary-light: hsl(var(--primary-hue), 65%, 75%);
+  --primary-dark: hsl(var(--primary-hue), 65%, 50%);
+
+  --secondary: hsl(var(--secondary-hue), 60%, 65%);
+  --secondary-light: hsl(var(--secondary-hue), 60%, 75%);
+  --secondary-dark: hsl(var(--secondary-hue), 60%, 55%);
+
+  --text-color: hsl(var(--primary-hue), 15%, 90%);
+  --text-light: hsl(var(--primary-hue), 15%, 75%);
+  --text-lighter: hsl(var(--primary-hue), 15%, 60%);
+
+  --background: hsl(220, 25%, 10%);
+  --card-bg: hsl(220, 25%, 15%);
+  --input-bg: hsl(220, 25%, 20%);
+  --border-color: hsl(220, 25%, 25%);
+  --shadow-color: 190, 50%, 40%;
+  --card-shadow: 0 4px 12px hsla(var(--shadow-color), 0.3);
+  --card-shadow-hover: 0 6px 16px hsla(var(--shadow-color), 0.4);
+
+  /* Map colors for dark mode */
+  --map-marker: var(--primary-light);
+  --map-marker-shadow: rgba(0, 0, 0, 0.4);
+  --map-popup-bg: var(--card-bg);
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-foreground: var(--text-color);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Remove the default dark mode media query */
+/* @media (prefers-color-scheme: dark) { ... } */
+
+body {
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+  background: var(--background);
+  color: var(--text-color);
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 0.6em;
+  color: var(--text-color);
+  letter-spacing: -0.02em;
+}
+
+h1 { font-size: 2.25rem; }
+h2 { font-size: 1.75rem; }
+h3 { font-size: 1.375rem; }
+h4 { font-size: 1.125rem; }
+
+p, li, label, input, textarea, select {
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--text-light);
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+a:hover {
+  color: var(--primary-dark);
+}
+
+.text-enhanced {
+  text-shadow: 0 1px 2px hsla(0, 0%, 0%, 0.1);
+}
+[data-theme="dark"] .text-enhanced {
+  text-shadow: 0 1px 2px hsla(0, 0%, 0%, 0.4);
+}
+
+/* Cards and containers */
+.card {
+  background-color: var(--card-bg);
+  border-radius: 0.75rem; /* Slightly larger radius */
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border-color);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.3s ease, background-color 0.3s ease;
+  overflow: hidden; /* Ensure content respects border radius */
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--card-shadow-hover);
+}
+
+/* Leaflet Map Styles */
+/* Override Leaflet default styles to work with our theme */
+.leaflet-container {
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  transition: border-color 0.3s ease;
+}
+
+.leaflet-control-zoom {
+  border: 1px solid var(--border-color) !important;
+  border-radius: 0.5rem !important;
+  box-shadow: var(--card-shadow) !important;
+}
+
+.leaflet-control-zoom a {
+  color: var(--text-color) !important;
+  background-color: var(--card-bg) !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: var(--primary-light) !important;
+  color: white !important;
+}
+
+.leaflet-control-attribution {
+  background-color: var(--card-bg) !important;
+  color: var(--text-lighter) !important;
+  font-size: 0.7rem !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.leaflet-control-attribution a {
+  color: var(--primary) !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background-color: var(--map-popup-bg) !important;
+  color: var(--text-color) !important;
+  border-radius: 0.5rem !important;
+  box-shadow: var(--card-shadow) !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.leaflet-popup-tip {
+  background-color: var(--map-popup-bg) !important;
+  transition: background-color 0.3s ease;
+}
+
+.dark-map .leaflet-tile {
+  filter: brightness(0.8) contrast(1.1) saturate(0.8);
+}
+
+/* Custom Map Marker Styles */
+.map-marker {
+  position: relative;
+  width: 30px;
+  height: 42px;
+}
+
+.map-marker-pin {
+  width: 30px;
+  height: 30px;
+  border-radius: 50% 50% 50% 0;
+  background-color: var(--primary);
+  position: absolute;
+  transform: rotate(-45deg);
+  left: 0;
+  top: 0;
+  box-shadow: 0 3px 6px var(--map-marker-shadow);
+  animation: bounceInDown 0.5s ease-out;
+}
+
+.map-marker-pin:after {
+  content: '';
+  width: 14px;
+  height: 14px;
+  margin: 8px 0 0 8px;
+  background-color: #fff;
+  position: absolute;
+  border-radius: 50%;
+}
+
+.map-marker-pulse {
+  background: rgba(var(--shadow-color), 0.2);
+  border-radius: 50%;
+  height: 16px;
+  width: 16px;
+  position: absolute;
+  left: 7px;
+  top: 24px;
+  transform: rotateX(55deg);
+  z-index: -1;
+  animation: pulse 2s infinite;
+}
+
+.map-marker-dark .map-marker-pin {
+  background-color: var(--primary-light);
+}
+
+@keyframes bounceInDown {
+  from {
+    transform: rotate(-45deg) translateY(-30px);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(-45deg) translateY(0);
+    opacity: 1;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* World map background styles */
+.hero-background {
+  background-image: url('/world-map.svg'); /* Keep the map */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+  filter: grayscale(20%) brightness(1.05); /* Subtle filter */
+  will-change: transform; /* Optimize for animation */
 }
+
+.hero-background::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Use primary color with gradient */
+  background: linear-gradient(135deg, hsla(var(--primary-hue), 85%, 45%, 0.85), hsla(var(--secondary-hue), 80%, 50%, 0.75));
+  z-index: 1;
+  transition: background 0.3s ease;
+  will-change: opacity, background; /* Optimize for animation */
+}
+
+[data-theme="dark"] .hero-background::before {
+   background: linear-gradient(135deg, hsla(var(--primary-hue), 65%, 40%, 0.7), hsla(var(--secondary-hue), 70%, 40%, 0.6));
+}
+
+[data-theme="dark"] .hero-background {
+  filter: grayscale(40%) brightness(0.8);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  color: white; /* Ensure text is visible */
+}
+
+.hero-content h1, .hero-content p {
+  color: white;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Subtle animations */
+@keyframes pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 hsla(var(--primary-hue), 70%, 60%, 0.4); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 10px hsla(var(--primary-hue), 70%, 60%, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 hsla(var(--primary-hue), 70%, 60%, 0); }
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+  border-radius: 50%;
+}
+
+/* Light theme sun animation */
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.sun-animate {
+  animation: rotate 15s linear infinite;
+}
+
+/* Dark theme stars animation */
+@keyframes twinkle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.stars-animate {
+  animation: twinkle 2s ease-in-out infinite;
+}
+
+.stars-animate-delayed {
+  animation: twinkle 2s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-light);
+  border-radius: 10px;
+  border: 2px solid var(--background); /* Add border to make it look thinner */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Ensure text color overrides work with Tailwind */
+.text-gray-500 { color: var(--text-lighter) !important; }
+.text-gray-600 { color: var(--text-light) !important; }
+.text-gray-700 { color: var(--text-color) !important; }
+.text-gray-800 { color: var(--text-color) !important; }
+.text-gray-900 { color: var(--text-color) !important; }
+
+
+/* Button styles enhancement */
+.btn {
+  display: inline-flex; /* Align icon and text */
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.2rem; /* Slightly larger padding */
+  border-radius: 0.5rem; /* Match card radius */
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: 1px solid transparent; /* Base border */
+  cursor: pointer;
+}
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-dark);
+  border-color: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px hsla(var(--shadow-color), 0.15);
+}
+
+.btn-secondary {
+  background-color: var(--secondary);
+  color: white;
+  border-color: var(--secondary);
+}
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--secondary-dark);
+  border-color: var(--secondary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px hsla(var(--shadow-color), 0.1);
+}
+
+.btn-outlined {
+  background-color: transparent;
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.btn-outlined:hover:not(:disabled) {
+  background-color: hsla(var(--primary-hue), 70%, 60%, 0.08);
+  border-color: var(--primary-dark);
+  color: var(--primary-dark);
+}
+
+[data-theme="dark"] .btn-outlined {
+  color: var(--primary-light);
+  border-color: var(--primary-light);
+}
+[data-theme="dark"] .btn-outlined:hover:not(:disabled) {
+  background-color: hsla(var(--primary-hue), 70%, 70%, 0.1);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+
+/* Input field styles */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="date"],
+textarea,
+select {
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem; /* Standard Tailwind radius */
+  padding: 0.6rem 0.75rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease, color 0.3s ease;
+  width: 100%; /* Ensure inputs take full width by default */
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-lighter);
+  opacity: 0.8;
+}
+
+input:focus, textarea:focus, select:focus {
+  box-shadow: 0 0 0 3px hsla(var(--primary-hue), 70%, 60%, 0.2);
+  border-color: var(--primary) !important; /* Ensure focus style overrides Tailwind */
+  outline: none;
+}
+
+/* Checkbox styling */
+input[type="checkbox"] {
+  appearance: none;
+  width: 1.15em;
+  height: 1.15em;
+  border: 1.5px solid var(--border-color);
+  border-radius: 0.25em;
+  background-color: var(--input-bg);
+  transition: all 0.15s ease-in-out;
+  position: relative;
+  cursor: pointer;
+  margin-right: 0.5em; /* Add space between checkbox and label */
+  vertical-align: middle; /* Align with text */
+}
+
+input[type="checkbox"]:checked {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+input[type="checkbox"]:checked::before {
+  content: '✓';
+  font-size: 0.9em;
+  color: white;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  line-height: 1;
+}
+
+input[type="checkbox"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px hsla(var(--primary-hue), 70%, 60%, 0.2);
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--card-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s;
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .light-icon { display: none; }
+[data-theme="light"] .dark-icon { display: none; }
+
+/* Add specific overrides if Tailwind utility classes conflict */
+.bg-white { background-color: var(--card-bg) !important; }
+.bg-gray-50 { background-color: var(--background) !important; }
+.border-gray-200 { border-color: var(--border-color) !important; }
+.border-gray-300 { border-color: var(--border-color) !important; }
+/* Add more overrides as needed */
