@@ -1,6 +1,6 @@
-# EOTrip - Seyahat Uygulaması
+#  - Seyahat Uygulaması
 
-EOTrip, seyahat planlaması ve konaklama rezervasyonu yapmak için geliştirilmiş modern bir web uygulamasıdır. Kullanıcılar, dünyanın dört bir yanındaki destinasyonları keşfedebilir, konaklama yerleri arayabilir ve rezervasyon yapabilir.
+Tripsync, seyahat planlaması ve konaklama rezervasyonu yapmak için geliştirilmiş modern bir web uygulamasıdır. Kullanıcılar, dünyanın dört bir yanındaki destinasyonları keşfedebilir, konaklama yerleri arayabilir ve rezervasyon yapabilir.
 
 ## Özellikler
 
@@ -26,8 +26,8 @@ Projeyi yerel makinenizde çalıştırmak için aşağıdaki adımları izleyin:
 
 ```bash
 # Repoyu klonlayın
-git clone https://github.com/username/eotrip.git
-cd eotrip
+git clone https://github.com/username/tripsync.git
+cd tripsync
 
 # Bağımlılıkları yükleyin
 npm install
