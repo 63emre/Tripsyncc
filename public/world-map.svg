@@ -1,30 +1,64 @@
 <svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background -->
-  <rect width="800" height="400" fill="#f0f4f8" />
+  <!-- Background - Will be transparent so it works in both modes -->
+  <rect width="800" height="400" fill="none" />
   
-  <!-- Simplified World Map Outline -->
-  <g fill="#d1d5db" stroke="#9ca3af" stroke-width="1">
+  <!-- Simplified World Map Outline - Light Mode with class for theme toggle -->
+  <g class="map-light-mode">
     <!-- North America -->
-    <path d="M150,100 C180,80 200,90 220,70 C240,50 260,60 280,60 C300,60 320,80 330,100 C340,120 330,140 320,160 C310,180 290,190 270,200 C250,210 230,200 210,190 C190,180 170,170 160,150 C150,130 140,120 150,100 Z" />
+    <path d="M150,100 C180,80 200,90 220,70 C240,50 260,60 280,60 C300,60 320,80 330,100 C340,120 330,140 320,160 C310,180 290,190 270,200 C250,210 230,200 210,190 C190,180 170,170 160,150 C150,130 140,120 150,100 Z" fill="#d1d5db" stroke="#9ca3af" stroke-width="1" />
     
     <!-- South America -->
-    <path d="M220,220 C240,210 260,220 270,240 C280,260 270,280 260,300 C250,320 230,330 210,320 C190,310 180,290 190,270 C200,250 210,230 220,220 Z" />
+    <path d="M220,220 C240,210 260,220 270,240 C280,260 270,280 260,300 C250,320 230,330 210,320 C190,310 180,290 190,270 C200,250 210,230 220,220 Z" fill="#d1d5db" stroke="#9ca3af" stroke-width="1" />
     
     <!-- Europe -->
-    <path d="M380,80 C400,70 420,80 430,100 C440,120 430,140 420,150 C410,160 390,155 380,145 C370,135 370,110 380,80 Z" />
+    <path d="M380,80 C400,70 420,80 430,100 C440,120 430,140 420,150 C410,160 390,155 380,145 C370,135 370,110 380,80 Z" fill="#d1d5db" stroke="#9ca3af" stroke-width="1" />
     
     <!-- Africa -->
-    <path d="M380,180 C400,170 420,180 440,190 C460,200 470,220 460,240 C450,260 440,280 420,290 C400,300 380,290 370,270 C360,250 360,230 370,210 C375,190 370,190 380,180 Z" />
+    <path d="M380,180 C400,170 420,180 440,190 C460,200 470,220 460,240 C450,260 440,280 420,290 C400,300 380,290 370,270 C360,250 360,230 370,210 C375,190 370,190 380,180 Z" fill="#d1d5db" stroke="#9ca3af" stroke-width="1" />
     
     <!-- Asia -->
-    <path d="M460,100 C490,80 520,70 550,80 C580,90 610,110 620,140 C630,170 620,200 600,220 C580,240 550,250 520,240 C490,230 470,210 460,180 C450,150 450,120 460,100 Z" />
+    <path d="M460,100 C490,80 520,70 550,80 C580,90 610,110 620,140 C630,170 620,200 600,220 C580,240 550,250 520,240 C490,230 470,210 460,180 C450,150 450,120 460,100 Z" fill="#d1d5db" stroke="#9ca3af" stroke-width="1" />
     
     <!-- Australia -->
-    <path d="M600,260 C620,250 640,260 650,280 C660,300 650,320 630,330 C610,340 590,330 580,310 C570,290 580,270 600,260 Z" />
+    <path d="M600,260 C620,250 640,260 650,280 C660,300 650,320 630,330 C610,340 590,330 580,310 C570,290 580,270 600,260 Z" fill="#d1d5db" stroke="#9ca3af" stroke-width="1" />
+  </g>
+
+  <!-- Simplified World Map Outline - Dark Mode with class for theme toggle -->
+  <g class="map-dark-mode" opacity="0">
+    <!-- North America -->
+    <path d="M150,100 C180,80 200,90 220,70 C240,50 260,60 280,60 C300,60 320,80 330,100 C340,120 330,140 320,160 C310,180 290,190 270,200 C250,210 230,200 210,190 C190,180 170,170 160,150 C150,130 140,120 150,100 Z" fill="#374151" stroke="#6B7280" stroke-width="1.2" />
+    
+    <!-- South America -->
+    <path d="M220,220 C240,210 260,220 270,240 C280,260 270,280 260,300 C250,320 230,330 210,320 C190,310 180,290 190,270 C200,250 210,230 220,220 Z" fill="#374151" stroke="#6B7280" stroke-width="1.2" />
+    
+    <!-- Europe -->
+    <path d="M380,80 C400,70 420,80 430,100 C440,120 430,140 420,150 C410,160 390,155 380,145 C370,135 370,110 380,80 Z" fill="#374151" stroke="#6B7280" stroke-width="1.2" />
+    
+    <!-- Africa -->
+    <path d="M380,180 C400,170 420,180 440,190 C460,200 470,220 460,240 C450,260 440,280 420,290 C400,300 380,290 370,270 C360,250 360,230 370,210 C375,190 370,190 380,180 Z" fill="#374151" stroke="#6B7280" stroke-width="1.2" />
+    
+    <!-- Asia -->
+    <path d="M460,100 C490,80 520,70 550,80 C580,90 610,110 620,140 C630,170 620,200 600,220 C580,240 550,250 520,240 C490,230 470,210 460,180 C450,150 450,120 460,100 Z" fill="#374151" stroke="#6B7280" stroke-width="1.2" />
+    
+    <!-- Australia -->
+    <path d="M600,260 C620,250 640,260 650,280 C660,300 650,320 630,330 C610,340 590,330 580,310 C570,290 580,270 600,260 Z" fill="#374151" stroke="#6B7280" stroke-width="1.2" />
   </g>
   
-  <!-- Grid Lines -->
-  <g stroke="#e5e7eb" stroke-width="0.5">
+  <!-- Grid Lines Light Mode -->
+  <g class="grid-light-mode" stroke="#e5e7eb" stroke-width="0.5">
+    <!-- Horizontal Lines -->
+    <line x1="0" y1="100" x2="800" y2="100" />
+    <line x1="0" y1="200" x2="800" y2="200" />
+    <line x1="0" y1="300" x2="800" y2="300" />
+    
+    <!-- Vertical Lines -->
+    <line x1="200" y1="0" x2="200" y2="400" />
+    <line x1="400" y1="0" x2="400" y2="400" />
+    <line x1="600" y1="0" x2="600" y2="400" />
+  </g>
+
+  <!-- Grid Lines Dark Mode -->
+  <g class="grid-dark-mode" stroke="#4B5563" stroke-width="0.5" opacity="0">
     <!-- Horizontal Lines -->
     <line x1="0" y1="100" x2="800" y2="100" />
     <line x1="0" y1="200" x2="800" y2="200" />
@@ -36,7 +70,7 @@
     <line x1="600" y1="0" x2="600" y2="400" />
   </g>
   
-  <!-- Small Dots for Cities -->
+  <!-- Small Dots for Cities - Use the theme color variable -->
   <g fill="#9370DB">
     <circle cx="180" cy="120" r="3" />
     <circle cx="240" cy="90" r="3" />
@@ -49,8 +83,54 @@
     <circle cx="620" cy="290" r="3" />
   </g>
   
-  <!-- Connecting Lines -->
+  <!-- Connecting Lines - Using theme color -->
   <g stroke="#9370DB" stroke-width="0.8" opacity="0.5">
     <path d="M180,120 L240,90 L400,100 L430,120 L510,140 L560,160 L410,210 L230,260 L620,290" fill="none" />
   </g>
+
+  <!-- Script to handle theme changes -->
+  <script type="text/javascript">
+  <![CDATA[
+    function updateTheme(isDarkMode) {
+      const lightModeElements = document.getElementsByClassName('map-light-mode');
+      const darkModeElements = document.getElementsByClassName('map-dark-mode');
+      const gridLightMode = document.getElementsByClassName('grid-light-mode');
+      const gridDarkMode = document.getElementsByClassName('grid-dark-mode');
+      
+      for (let i = 0; i < lightModeElements.length; i++) {
+        lightModeElements[i].setAttribute('opacity', isDarkMode ? '0' : '1');
+      }
+      
+      for (let i = 0; i < darkModeElements.length; i++) {
+        darkModeElements[i].setAttribute('opacity', isDarkMode ? '1' : '0');
+      }
+      
+      for (let i = 0; i < gridLightMode.length; i++) {
+        gridLightMode[i].setAttribute('opacity', isDarkMode ? '0' : '1');
+      }
+      
+      for (let i = 0; i < gridDarkMode.length; i++) {
+        gridDarkMode[i].setAttribute('opacity', isDarkMode ? '1' : '0');
+      }
+    }
+
+    // Check for theme by looking at the parent document
+    function checkTheme() {
+      try {
+        const isDarkMode = document.body.hasAttribute('data-theme') && 
+                          document.body.getAttribute('data-theme') === 'dark';
+        updateTheme(isDarkMode);
+      } catch (e) {
+        // Fallback
+      }
+    }
+
+    // Check theme on load
+    if (window.addEventListener) {
+      window.addEventListener('load', checkTheme);
+      // Periodically check for theme changes
+      setInterval(checkTheme, 1000);
+    }
+  ]]>
+  </script>
 </svg> 

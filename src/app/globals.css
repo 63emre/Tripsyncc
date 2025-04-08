@@ -262,8 +262,8 @@ a:hover {
   background-position: center;
   background-repeat: no-repeat;
   position: relative;
-  filter: grayscale(20%) brightness(1.05); /* Subtle filter */
   will-change: transform; /* Optimize for animation */
+  background-color: transparent;
 }
 
 .hero-background::before {
@@ -285,7 +285,7 @@ a:hover {
 }
 
 [data-theme="dark"] .hero-background {
-  filter: grayscale(40%) brightness(0.8);
+  background-color: transparent;
 }
 
 .hero-content {

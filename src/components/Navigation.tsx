@@ -42,9 +42,12 @@ const Navigation: React.FC = () => {
                 transition={{ type: "spring", stiffness: 400, damping: 10 }}
               >
                 <motion.span
-                  className="text-2xl font-bold text-primary mr-1"
+                  className="text-2xl font-bold mr-1"
+                  style={{ color: isDarkMode ? '#5EEAD4' : 'hsl(190, 85%, 45%)' }}
                   animate={{ 
-                    color: ['hsl(190, 85%, 45%)', 'hsl(220, 80%, 55%)', 'hsl(190, 85%, 45%)'],
+                    color: isDarkMode 
+                      ? ['#5EEAD4', '#6495ED', '#5EEAD4'] 
+                      : ['hsl(190, 85%, 45%)', 'hsl(220, 80%, 55%)', 'hsl(190, 85%, 45%)'],
                   }}
                   transition={{ 
                     duration: 4,
@@ -59,7 +62,7 @@ const Navigation: React.FC = () => {
                   initial={{ rotate: 0 }}
                   animate={{ 
                     rotate: 360,
-                    color: isDarkMode ? '#fff' : 'hsl(220, 80%, 55%)'
+                    color: isDarkMode ? '#ffffff' : 'hsl(220, 80%, 55%)'
                   }}
                   transition={{ 
                     rotate: {
@@ -69,12 +72,15 @@ const Navigation: React.FC = () => {
                     }
                   }}
                 >
-                  ✦
+                  <span className="inline-block">★</span>
                 </motion.span>
                 <motion.span
-                  className="text-2xl font-bold text-secondary"
+                  className="text-2xl font-bold"
+                  style={{ color: isDarkMode ? '#6495ED' : 'hsl(220, 80%, 55%)' }}
                   animate={{ 
-                    color: ['hsl(220, 80%, 55%)', 'hsl(190, 85%, 45%)', 'hsl(220, 80%, 55%)'],
+                    color: isDarkMode 
+                      ? ['#6495ED', '#5EEAD4', '#6495ED'] 
+                      : ['hsl(220, 80%, 55%)', 'hsl(190, 85%, 45%)', 'hsl(220, 80%, 55%)'],
                   }}
                   transition={{ 
                     duration: 4,

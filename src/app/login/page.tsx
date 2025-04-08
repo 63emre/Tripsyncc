@@ -145,7 +145,7 @@ const LoginPage: React.FC = () => {
                   transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
                   className={`text-4xl font-bold ${isDarkMode ? 'text-white' : 'text-secondary-dark'} inline-block`}
                 >
-                  ✦
+                  ★
                 </motion.span>
               </motion.div>
               {Array.from("Sync").map((letter, i) => (
