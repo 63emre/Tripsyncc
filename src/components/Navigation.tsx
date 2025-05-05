@@ -2,28 +2,54 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import ThemeToggle from './ThemeToggle';
 import { useTheme } from './ThemeProviderClient';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Navigation: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { theme } = useTheme();
+  const { user, isAuthenticated, logout } = useAuth();
+  const router = useRouter();
   const isDarkMode = theme === 'dark';
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
+  
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
 
-  const navLinks = [
-    { href: '/home', text: 'Ana Sayfa' },
-    { href: '/search', text: 'Keşfet' },
-    { href: '/listing/new', text: 'İlan Ekle' },
-    { href: '/profile', text: 'Profil' },
-    { href: '/friends', text: 'Arkadaşlar' },
-    { href: '/messages', text: 'Mesajlar' },
-    { href: '/login', text: 'Çıkış Yap' },
-  ];
+  // Oturum durumuna göre gösterilecek menü öğeleri
+  const getNavLinks = () => {
+    const commonLinks = [
+      { href: '/home', text: 'Ana Sayfa' },
+      { href: '/search', text: 'Keşfet' },
+    ];
+    
+    // Kullanıcı giriş yapmışsa gösterilecek linkler
+    const authLinks = [
+      { href: '/listing/new', text: 'İlan Ekle' },
+      { href: '/profile', text: 'Profil' },
+      { href: '/friends', text: 'Arkadaşlar' },
+      { href: '/messages', text: 'Mesajlar' },
+      { href: '#', text: 'Çıkış Yap', onClick: handleLogout },
+    ];
+    
+    // Kullanıcı giriş yapmamışsa gösterilecek linkler
+    const guestLinks = [
+      { href: '/login', text: 'Giriş Yap' },
+      { href: '/signup', text: 'Kayıt Ol' },
+    ];
+    
+    return [...commonLinks, ...(isAuthenticated ? authLinks : guestLinks)];
+  };
+  
+  const navLinks = getNavLinks();
 
   return (
     <motion.nav 
@@ -98,7 +124,7 @@ const Navigation: React.FC = () => {
           <div className="hidden sm:ml-6 sm:flex sm:items-center sm:space-x-4">
             {navLinks.map((link, index) => (
               <motion.div
-                key={link.href}
+                key={link.href + index}
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
@@ -106,6 +132,7 @@ const Navigation: React.FC = () => {
                 <Link 
                   href={link.href} 
                   className="px-3 py-2 text-sm font-medium text-text-color hover:text-primary transition-colors duration-200 relative group"
+                  onClick={link.onClick}
                 >
                   {link.text}
                   <motion.span 
@@ -176,20 +203,53 @@ const Navigation: React.FC = () => {
             <div className="pt-2 pb-3 space-y-1 border-t border-border-color">
               {navLinks.map((link, index) => (
                 <motion.div
-                  key={link.href}
+                  key={link.href + index}
                   initial={{ x: -20, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <Link 
-                    href={link.href} 
-                    className="block px-3 py-2 text-base font-medium text-text-color hover:text-primary hover:bg-primary/5"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    {link.text}
-                  </Link>
+                  {link.onClick ? (
+                    <button 
+                      onClick={() => {
+                        link.onClick?.();
+                        setIsMenuOpen(false);
+                      }} 
+                      className="block w-full text-left px-3 py-2 text-base font-medium text-text-color hover:text-primary hover:bg-primary/5"
+                    >
+                      {link.text}
+                    </button>
+                  ) : (
+                    <Link 
+                      href={link.href} 
+                      className="block px-3 py-2 text-base font-medium text-text-color hover:text-primary hover:bg-primary/5"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {link.text}
+                    </Link>
+                  )}
                 </motion.div>
               ))}
+              
+              {/* Kullanıcı profil kısmını göster (eğer giriş yapıldıysa) */}
+              {isAuthenticated && (
+                <div className="pt-4 pb-3 border-t border-border-color">
+                  <div className="flex items-center px-4">
+                    <div className="flex-shrink-0">
+                      <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-600">
+                        {user?.profile?.avatar ? (
+                          <img src={user.profile.avatar} alt={user.name || 'Kullanıcı'} className="h-10 w-10 rounded-full" />
+                        ) : (
+                          <span>{user?.name?.[0] || user?.email?.[0] || '?'}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="ml-3">
+                      <div className="text-base font-medium text-text-color">{user?.name || 'Kullanıcı'}</div>
+                      <div className="text-sm font-medium text-text-light">{user?.email}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
@@ -198,4 +258,4 @@ const Navigation: React.FC = () => {
   );
 };
 
-export default Navigation; 
+export default Navigation;

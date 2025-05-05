@@ -1,397 +1,438 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Navigation from '@/components/Navigation';
-import Input from '@/components/Input';
-import Button from '@/components/Button';
-import { dummyUser } from '@/utils/dummyData';
-import Image from '@/components/Image';
-import { useTheme } from '@/components/ThemeProviderClient';
 import { motion } from 'framer-motion';
+import { BiEdit, BiUser, BiEnvelope, BiPhone, BiMapPin, BiCalendar } from 'react-icons/bi';
+import Navigation from '@/components/Navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { get, put, uploadFile } from '@/lib/api';
+import Input from '@/components/Input';
+
+type ProfileFormData = {
+  name: string;
+  email: string;
+  bio: string;
+  phoneNumber: string;
+  address: string;
+  city: string;
+  country: string;
+  dateOfBirth: string;
+};
 
 const ProfilePage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'profile' | 'bookings' | 'favorites'>('profile');
-  const [isEditing, setIsEditing] = useState(false);
-  const { theme } = useTheme();
-  const isDarkMode = theme === 'dark';
+  const { user, isAuthenticated, isLoading: authLoading, updateUser } = useAuth();
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [formData, setFormData] = useState({
-    firstName: dummyUser.firstName,
-    lastName: dummyUser.lastName,
-    email: dummyUser.email,
-    phone: dummyUser.phone,
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImageUploading, setIsImageUploading] = useState(false);
+  const [formData, setFormData] = useState<ProfileFormData>({
+    name: '',
+    email: '',
+    bio: '',
+    phoneNumber: '',
+    address: '',
+    city: '',
+    country: '',
+    dateOfBirth: '',
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [notifications] = useState([
+    {
+      id: 1,
+      title: 'Rezervasyon Onayı',
+      message: 'İstanbul seyahatiniz için rezervasyonunuz onaylandı!',
+      date: '1 saat önce',
+      isRead: false,
+    },
+    {
+      id: 2,
+      title: 'İndirim Fırsatı',
+      message: 'Size özel %15 indirim fırsatını kaçırmayın!',
+      date: '3 saat önce',
+      isRead: true,
+    },
+    {
+      id: 3,
+      title: 'Ödeme Hatırlatması',
+      message: 'Yaklaşan seyahatinizin ödemesi 3 gün içinde bekleniyor.',
+      date: '1 gün önce',
+      isRead: true,
+    },
+  ]);
+
+  // Kullanıcı oturum açmamışsa login sayfasına yönlendir
+  useEffect(() => {
+    if (!isAuthenticated && !authLoading) {
+      router.push('/login');
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  // Kullanıcı verilerini form state'ine aktarma
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        email: user.email || '',
+        bio: user.profile?.bio || '',
+        phoneNumber: user.profile?.phoneNumber || '',
+        address: user.profile?.address || '',
+        city: user.profile?.city || '',
+        country: user.profile?.country || '',
+        dateOfBirth: user.profile?.dateOfBirth 
+          ? new Date(user.profile.dateOfBirth).toISOString().split('T')[0]
+          : '',
+      });
+    }
+  }, [user]);
+
+  // Form input değişikliklerini işleme
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       [name]: value,
-    });
+    }));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  // Profil resmini yükleme
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      // Dosya boyutu kontrolü (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Dosya boyutu 5MB\'tan küçük olmalıdır.');
+        return;
+      }
+      
+      const formData = new FormData();
+      formData.append('avatar', file);
+      
+      try {
+        setIsImageUploading(true);
+        const response = await uploadFile<{profile: { avatar: string }}>(
+          '/uploads/profile', 
+          formData
+        );
+        
+        // Kullanıcı profilini güncelle
+        if (user && response.profile.avatar) {
+          updateUser({
+            profile: {
+              ...user.profile,
+              avatar: response.profile.avatar,
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Profil resmi yükleme hatası:', error);
+        alert('Profil resmi yüklenirken bir hata oluştu.');
+      } finally {
+        setIsImageUploading(false);
+      }
+    }
+  };
+
+  // Profili güncelleme
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Save profile logic would go here
-    setIsEditing(false);
+    
+    setIsSubmitting(true);
+    
+    try {
+      const response = await put('/users/profile', {
+        name: formData.name,
+        bio: formData.bio,
+        phoneNumber: formData.phoneNumber,
+        address: formData.address,
+        city: formData.city,
+        country: formData.country,
+        dateOfBirth: formData.dateOfBirth || null,
+      });
+      
+      // Kullanıcı bilgilerini güncelle
+      if (response.user) {
+        updateUser(response.user);
+        setIsEditing(false);
+      }
+    } catch (error) {
+      console.error('Profil güncelleme hatası:', error);
+      alert('Profil güncellenirken bir hata oluştu.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleReservation = () => {
-    router.push('/payment');
-  };
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="p-4 text-center">
+          <div className="w-16 h-16 border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-lg">Yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200 relative">
-      {/* Dark mode background stars effect */}
-      {isDarkMode && (
-        <div className="absolute inset-0 overflow-hidden z-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900"></div>
-          <div className="stars-animate absolute h-2 w-2 bg-white rounded-full" style={{ top: '20%', left: '20%', opacity: 0.5 }}></div>
-          <div className="stars-animate absolute h-2 w-2 bg-white rounded-full" style={{ top: '30%', left: '70%', opacity: 0.7 }}></div>
-          <div className="stars-animate-delayed absolute h-1 w-1 bg-white rounded-full" style={{ top: '65%', left: '40%', opacity: 0.6 }}></div>
-          <div className="stars-animate-delayed absolute h-3 w-3 bg-white rounded-full" style={{ top: '15%', left: '60%', opacity: 0.3 }}></div>
-          <div className="stars-animate absolute h-2 w-2 bg-white rounded-full" style={{ top: '75%', left: '85%', opacity: 0.5 }}></div>
-          <div className="stars-animate-delayed absolute h-1 w-1 bg-white rounded-full" style={{ top: '45%', left: '15%', opacity: 0.4 }}></div>
-        </div>
-      )}
-      
+    <div className="min-h-screen bg-background">
       <Navigation />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        <motion.div 
-          className="card overflow-hidden dark:bg-gray-800/80 dark:backdrop-blur-sm dark:border dark:border-gray-700 transition-colors duration-200 shadow-lg"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className={`px-4 py-5 sm:px-6 flex items-center justify-between ${
-            isDarkMode 
-              ? 'bg-gradient-to-r from-violet-900/30 to-gray-800/50 backdrop-blur-sm' 
-              : 'bg-gradient-to-r from-[#f5f0ff] to-white'
-          } transition-colors duration-200`}>
-            <div>
-              <h1 className="text-2xl font-bold dark:text-white transition-colors duration-200">Profil</h1>
-              <p className="mt-1 max-w-2xl text-sm dark:text-gray-300 transition-colors duration-200">
-                Kişisel bilgilerinizi görüntüleyin ve düzenleyin
-              </p>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Profil Kartı */}
+          <motion.div 
+            className="lg:col-span-1"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="bg-card-bg rounded-lg shadow-md p-6 mb-6">
+              <div className="flex flex-col items-center text-center mb-6">
+                <div className="relative">
+                  <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 mb-4">
+                    {user.profile?.avatar ? (
+                      <img 
+                        src={user.profile.avatar} 
+                        alt={user.name || 'Profil'} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        <BiUser size={64} />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Resim yükleme butonu */}
+                  <button 
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute bottom-4 right-0 bg-primary hover:bg-primary-dark text-white rounded-full p-2 shadow-lg transition-colors"
+                    disabled={isImageUploading}
+                  >
+                    <BiEdit size={18} />
+                  </button>
+                  <input 
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleAvatarUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                </div>
+                
+                <h1 className="text-2xl font-bold">{user.name || 'Kullanıcı'}</h1>
+                <p className="text-muted mt-1">{user.email}</p>
+                
+                {user.profile?.bio && (
+                  <p className="mt-4 text-text-color">
+                    {user.profile.bio}
+                  </p>
+                )}
+              </div>
+              
+              <div className="border-t border-border-color pt-4">
+                <h3 className="font-semibold mb-2">Bildirimler</h3>
+                <div className="space-y-3">
+                  {notifications.map(notification => (
+                    <div 
+                      key={notification.id}
+                      className={`p-3 rounded-md ${notification.isRead ? 'bg-card-bg' : 'bg-primary/5'}`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <h4 className="font-medium">{notification.title}</h4>
+                        <span className="text-xs text-muted">{notification.date}</span>
+                      </div>
+                      <p className="text-sm text-muted mt-1">{notification.message}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
             
-            {activeTab === 'profile' && !isEditing && (
-              <Button
-                onClick={() => setIsEditing(true)}
-                variant="outlined"
-              >
-                Düzenle
-              </Button>
-            )}
-          </div>
+            <div className="bg-card-bg rounded-lg shadow-md p-6">
+              <h3 className="font-semibold mb-4">Hızlı Bağlantılar</h3>
+              <ul className="space-y-2">
+                <li>
+                  <a href="/messages" className="text-primary hover:underline">Mesajlar</a>
+                </li>
+                <li>
+                  <a href="/listing/new" className="text-primary hover:underline">İlan Ekle</a>
+                </li>
+                <li>
+                  <a href="/friends" className="text-primary hover:underline">Arkadaşlar</a>
+                </li>
+              </ul>
+            </div>
+          </motion.div>
           
-          {/* Tabs */}
-          <div className="border-b border-gray-200 dark:border-gray-700 transition-colors duration-200">
-            <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
-              <motion.button
-                onClick={() => setActiveTab('profile')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                  activeTab === 'profile'
-                    ? 'border-[#9370DB] text-[#9370DB] dark:border-violet-500 dark:text-violet-400'
-                    : 'border-transparent text-gray-600 hover:text-[#9370DB] dark:text-gray-300 dark:hover:text-violet-400 hover:border-[#9370DB] dark:hover:border-violet-500 transition-colors'
-                }`}
-                whileHover={{ y: -2 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
-              >
-                Profil Bilgileri
-              </motion.button>
-              <motion.button
-                onClick={() => setActiveTab('bookings')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                  activeTab === 'bookings'
-                    ? 'border-[#9370DB] text-[#9370DB] dark:border-violet-500 dark:text-violet-400'
-                    : 'border-transparent text-gray-600 hover:text-[#9370DB] dark:text-gray-300 dark:hover:text-violet-400 hover:border-[#9370DB] dark:hover:border-violet-500 transition-colors'
-                }`}
-                whileHover={{ y: -2 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
-              >
-                Rezervasyonlarım
-              </motion.button>
-              <motion.button
-                onClick={() => setActiveTab('favorites')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                  activeTab === 'favorites'
-                    ? 'border-[#9370DB] text-[#9370DB] dark:border-violet-500 dark:text-violet-400'
-                    : 'border-transparent text-gray-600 hover:text-[#9370DB] dark:text-gray-300 dark:hover:text-violet-400 hover:border-[#9370DB] dark:hover:border-violet-500 transition-colors'
-                }`}
-                whileHover={{ y: -2 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
-              >
-                Favorilerim
-              </motion.button>
-            </nav>
-          </div>
-          
-          {/* Profile Tab */}
-          {activeTab === 'profile' && (
-            <div className="px-6 py-6">
+          {/* Profil Detayları */}
+          <motion.div 
+            className="lg:col-span-2"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <div className="bg-card-bg rounded-lg shadow-md p-6 mb-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold">Profil Bilgileri</h2>
+                <button 
+                  className="text-primary hover:text-primary-dark"
+                  onClick={() => setIsEditing(!isEditing)}
+                >
+                  {isEditing ? 'İptal' : 'Düzenle'} <BiEdit className="inline ml-1" />
+                </button>
+              </div>
+              
               {isEditing ? (
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
+                <form onSubmit={handleSubmit}>
+                  <div className="space-y-4">
                     <Input
-                      label="Ad"
-                      name="firstName"
-                      value={formData.firstName}
-                      onChange={handleChange}
-                      required
+                      label="Ad Soyad"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      icon={<BiUser className="text-gray-400" />}
                     />
-                    <Input
-                      label="Soyad"
-                      name="lastName"
-                      value={formData.lastName}
-                      onChange={handleChange}
-                      required
-                    />
+                    
                     <Input
                       label="E-posta"
                       name="email"
-                      type="email"
                       value={formData.email}
-                      onChange={handleChange}
-                      required
+                      onChange={handleInputChange}
+                      readOnly
+                      icon={<BiEnvelope className="text-gray-400" />}
                     />
+                    
+                    <div className="form-group">
+                      <label className="block text-text-color mb-2">Hakkımda</label>
+                      <textarea
+                        name="bio"
+                        value={formData.bio}
+                        onChange={handleInputChange}
+                        rows={3}
+                        className="w-full p-3 border border-border-color rounded-md focus:ring-2 focus:ring-primary/30 focus:border-primary transition bg-background"
+                      ></textarea>
+                    </div>
+                    
                     <Input
                       label="Telefon"
-                      name="phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      required
+                      name="phoneNumber"
+                      value={formData.phoneNumber}
+                      onChange={handleInputChange}
+                      icon={<BiPhone className="text-gray-400" />}
                     />
-                  </div>
-                  
-                  <div className="flex justify-end space-x-3">
-                    <Button
-                      type="button"
-                      variant="outlined"
-                      onClick={() => setIsEditing(false)}
-                    >
-                      İptal
-                    </Button>
-                    <Button type="submit">Kaydet</Button>
+                    
+                    <Input
+                      label="Adres"
+                      name="address"
+                      value={formData.address}
+                      onChange={handleInputChange}
+                      icon={<BiMapPin className="text-gray-400" />}
+                    />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Input
+                        label="Şehir"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleInputChange}
+                        icon={<BiMapPin className="text-gray-400" />}
+                      />
+                      
+                      <Input
+                        label="Ülke"
+                        name="country"
+                        value={formData.country}
+                        onChange={handleInputChange}
+                        icon={<BiMapPin className="text-gray-400" />}
+                      />
+                    </div>
+                    
+                    <Input
+                      label="Doğum Tarihi"
+                      name="dateOfBirth"
+                      type="date"
+                      value={formData.dateOfBirth}
+                      onChange={handleInputChange}
+                      icon={<BiCalendar className="text-gray-400" />}
+                    />
+                    
+                    <div className="flex justify-end mt-6">
+                      <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? 'Kaydediliyor...' : 'Kaydet'}
+                      </button>
+                    </div>
                   </div>
                 </form>
               ) : (
-                <div className="bg-white dark:bg-gray-800/90 dark:backdrop-blur-sm rounded-lg transition-colors duration-200 shadow">
-                  <div className="flex flex-col md:flex-row">
-                    <motion.div 
-                      className="md:w-1/3 p-4 md:p-6 flex justify-center"
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.5 }}
-                    >
-                      <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 10 }}
-                      >
-                        <Image
-                          src={dummyUser.profileImage}
-                          alt={`${dummyUser.firstName} ${dummyUser.lastName}`}
-                          type="profile"
-                          containerClassName="h-48 w-48"
-                          className="rounded-full shadow-lg border-4 border-white dark:border-gray-700"
-                        />
-                      </motion.div>
-                    </motion.div>
-                    <div className="md:w-2/3 p-4 md:p-6">
-                      <dl className="divide-y divide-gray-100 dark:divide-gray-700 transition-colors duration-200">
-                        <div className="py-4 flex flex-col sm:flex-row">
-                          <dt className="text-sm font-medium w-full sm:w-1/3 text-gray-700 dark:text-gray-300 transition-colors duration-200">Ad Soyad</dt>
-                          <dd className="text-sm sm:w-2/3 font-medium text-gray-900 dark:text-white transition-colors duration-200">
-                            {dummyUser.firstName} {dummyUser.lastName}
-                          </dd>
-                        </div>
-                        <div className="py-4 flex flex-col sm:flex-row">
-                          <dt className="text-sm font-medium w-full sm:w-1/3 text-gray-700 dark:text-gray-300 transition-colors duration-200">E-posta adresi</dt>
-                          <dd className="text-sm sm:w-2/3 font-medium text-gray-900 dark:text-white transition-colors duration-200">
-                            {dummyUser.email}
-                          </dd>
-                        </div>
-                        <div className="py-4 flex flex-col sm:flex-row">
-                          <dt className="text-sm font-medium w-full sm:w-1/3 text-gray-700 dark:text-gray-300 transition-colors duration-200">Telefon</dt>
-                          <dd className="text-sm sm:w-2/3 font-medium text-gray-900 dark:text-white transition-colors duration-200">
-                            {dummyUser.phone}
-                          </dd>
-                        </div>
-                      </dl>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4 py-2">
+                    <div className="text-muted">Ad Soyad</div>
+                    <div className="col-span-2">{user.name || '-'}</div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-4 py-2">
+                    <div className="text-muted">E-posta</div>
+                    <div className="col-span-2">{user.email}</div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-4 py-2">
+                    <div className="text-muted">Hakkımda</div>
+                    <div className="col-span-2">{user.profile?.bio || '-'}</div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-4 py-2">
+                    <div className="text-muted">Telefon</div>
+                    <div className="col-span-2">{user.profile?.phoneNumber || '-'}</div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-4 py-2">
+                    <div className="text-muted">Adres</div>
+                    <div className="col-span-2">{user.profile?.address || '-'}</div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-4 py-2">
+                    <div className="text-muted">Şehir</div>
+                    <div className="col-span-2">{user.profile?.city || '-'}</div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-4 py-2">
+                    <div className="text-muted">Ülke</div>
+                    <div className="col-span-2">{user.profile?.country || '-'}</div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-4 py-2">
+                    <div className="text-muted">Doğum Tarihi</div>
+                    <div className="col-span-2">
+                      {user.profile?.dateOfBirth 
+                        ? new Date(user.profile.dateOfBirth).toLocaleDateString() 
+                        : '-'}
                     </div>
                   </div>
                 </div>
               )}
             </div>
-          )}
-          
-          {/* Bookings Tab */}
-          {activeTab === 'bookings' && (
-            <div className="px-6 py-6">
-              <div className="text-center py-12 bg-white dark:bg-gray-800/90 dark:backdrop-blur-sm rounded-lg transition-colors duration-200 shadow">
-                <div className={`${
-                  isDarkMode ? 'bg-violet-900/30' : 'bg-[#f5f0ff]'
-                } h-20 w-20 rounded-full mx-auto flex items-center justify-center mb-4 transition-colors duration-200`}>
-                  <svg className="h-10 w-10 text-[#9370DB] dark:text-violet-400 transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium mb-2 dark:text-white transition-colors duration-200">Henüz bir rezervasyon yapmadınız</h3>
-                <p className="max-w-md mx-auto mb-6 dark:text-gray-300 transition-colors duration-200">
-                  Hemen yeni bir tatil planlamak için rezervasyon yapabilirsiniz.
-                </p>
-                <Button onClick={handleReservation}>
-                  Rezervasyon Yap
-                </Button>
-              </div>
+            
+            <div className="bg-card-bg rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold mb-4">İlanlarım</h2>
+              <p className="text-center py-6 text-muted">
+                Henüz hiç ilanınız yok. Yeni bir ilan oluşturmak için <a href="/listing/new" className="text-primary hover:underline">tıklayın</a>.
+              </p>
             </div>
-          )}
-          
-          {/* Favorites Tab */}
-          {activeTab === 'favorites' && (
-            <div className="px-6 py-6">
-              <div className="text-center py-12 bg-white dark:bg-gray-800/90 dark:backdrop-blur-sm rounded-lg transition-colors duration-200 shadow">
-                <div className={`${
-                  isDarkMode ? 'bg-violet-900/30' : 'bg-[#f5f0ff]'
-                } h-20 w-20 rounded-full mx-auto flex items-center justify-center mb-4 transition-colors duration-200`}>
-                  <svg className="h-10 w-10 text-[#9370DB] dark:text-violet-400 transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium mb-2 dark:text-white transition-colors duration-200">Henüz favori eklememiş görünüyorsunuz</h3>
-                <p className="max-w-md mx-auto mb-6 dark:text-gray-300 transition-colors duration-200">
-                  Beğendiğiniz destinasyonları favorilerinize ekleyerek kolayca takip edebilirsiniz.
-                </p>
-                <Button onClick={() => router.push('/destinations')}>
-                  Destinasyonları Keşfet
-                </Button>
-              </div>
-            </div>
-          )}
-        </motion.div>
-        
-        {/* Latest Activities */}
-        <motion.div
-          className="mt-8 card overflow-hidden dark:bg-gray-800/80 dark:backdrop-blur-sm dark:border dark:border-gray-700 transition-colors duration-200 shadow-lg"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <div className={`px-4 py-5 sm:px-6 ${
-            isDarkMode 
-              ? 'bg-gradient-to-r from-violet-900/30 to-gray-800/50 backdrop-blur-sm' 
-              : 'bg-gradient-to-r from-[#f5f0ff] to-white'
-          } transition-colors duration-200`}>
-            <h2 className="text-xl font-bold dark:text-white transition-colors duration-200">Son Etkinlikler</h2>
-            <p className="mt-1 max-w-2xl text-sm dark:text-gray-300 transition-colors duration-200">
-              Son zamanlardaki gezi ve rezervasyon etkinlikleriniz
-            </p>
-          </div>
-          
-          <div className="bg-white dark:bg-gray-800/90 dark:backdrop-blur-sm p-6 transition-colors duration-200">
-            <div className="flow-root">
-              <ul className="-mb-8">
-                <li>
-                  <div className="relative pb-8">
-                    <span className="absolute top-5 left-5 -ml-px h-full w-0.5 bg-gray-200 dark:bg-gray-700" aria-hidden="true"></span>
-                    <div className="relative flex items-start space-x-3">
-                      <div className={`relative ${
-                        isDarkMode ? 'bg-violet-900/30' : 'bg-[#f5f0ff]'
-                      } h-10 w-10 rounded-full flex items-center justify-center transition-colors duration-200`}>
-                        <svg className="h-5 w-5 text-[#9370DB] dark:text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            İstanbul Turu
-                          </div>
-                          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-                            Bugün
-                          </p>
-                        </div>
-                        <div className="mt-2 text-sm text-gray-700 dark:text-gray-300">
-                          <p>
-                            İstanbul tatil rehberini görüntülediniz.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </li>
-                
-                <li>
-                  <div className="relative pb-8">
-                    <span className="absolute top-5 left-5 -ml-px h-full w-0.5 bg-gray-200 dark:bg-gray-700" aria-hidden="true"></span>
-                    <div className="relative flex items-start space-x-3">
-                      <div className={`relative ${
-                        isDarkMode ? 'bg-violet-900/30' : 'bg-[#f5f0ff]'
-                      } h-10 w-10 rounded-full flex items-center justify-center transition-colors duration-200`}>
-                        <svg className="h-5 w-5 text-[#9370DB] dark:text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                        </svg>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            Mehmet Kaya
-                          </div>
-                          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-                            Dün
-                          </p>
-                        </div>
-                        <div className="mt-2 text-sm text-gray-700 dark:text-gray-300">
-                          <p>
-                            İstanbul konaklama bilgisi hakkında mesaj gönderdiniz.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </li>
-                
-                <li>
-                  <div className="relative">
-                    <div className="relative flex items-start space-x-3">
-                      <div className={`relative ${
-                        isDarkMode ? 'bg-violet-900/30' : 'bg-[#f5f0ff]'
-                      } h-10 w-10 rounded-full flex items-center justify-center transition-colors duration-200`}>
-                        <svg className="h-5 w-5 text-[#9370DB] dark:text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            Malatya Seyahati
-                          </div>
-                          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-                            2 gün önce
-                          </p>
-                        </div>
-                        <div className="mt-2 text-sm text-gray-700 dark:text-gray-300">
-                          <p>
-                            Malatya seyahatiniz için otel bilgilerini incelediniz.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </main>
     </div>
   );
 };
 
-export default ProfilePage; 
+export default ProfilePage;

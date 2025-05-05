@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BiSearch, BiGlobe, BiCalendar, BiStar, BiUser } from 'react-icons/bi';
@@ -10,58 +10,32 @@ import Navigation from '@/components/Navigation';
 import DestinationCard from '@/components/DestinationCard';
 import MapComponent from '@/components/MapComponent';
 import { LatLngExpression } from 'leaflet';
+import { get } from '@/lib/api';
 
-// Demo data - this would come from your API in a real app
-const demoDestinations = [
-  {
-    id: "1",
-    name: 'Kapadokya',
-    country: 'Türkiye',
-    city: 'Nevşehir',
-    rating: 4.9,
-    shortDescription: 'Eşsiz peri bacaları ve sıcak hava balon turlarıyla ünlü',
-    description: 'Kapadokya, milyonlarca yıl önce volkanik patlamalar sonucu oluşan doğal oluşumlarıyla ünlüdür. Peribacaları, yeraltı şehirleri ve sıcak hava balonlarıyla büyüleyici bir deneyim sunar.',
-    priceRange: '500₺-1.500₺',
-    accommodationType: 'Butik Otel',
-    images: ['/images/destinations/cappadocia.jpg'],
-  },
-  {
-    id: "2",
-    name: 'İstanbul',
-    country: 'Türkiye',
-    city: 'İstanbul',
-    rating: 4.8,
-    shortDescription: 'İki kıtayı birleştiren tarihi ve kültürel zenginlik',
-    description: 'İstanbul, Avrupa ve Asya kıtalarını birleştiren, Bizans ve Osmanlı İmparatorluklarına başkentlik yapmış eşsiz bir şehirdir. Ayasofya, Topkapı Sarayı, Kapalıçarşı gibi tarihi değerleriyle ziyaretçilerini büyüler.',
-    priceRange: '750₺-2.500₺',
-    accommodationType: 'Şehir Oteli',
-    images: ['/images/destinations/istanbul.jpg'],
-  },
-  {
-    id: "3",
-    name: 'Antalya',
-    country: 'Türkiye',
-    city: 'Antalya',
-    rating: 4.7,
-    shortDescription: 'Turkuaz sahiller ve antik kentleriyle tatil cenneti',
-    description: 'Antalya, muhteşem plajları, antik kentleri ve doğal güzellikleriyle Türkiye&apos;nin en popüler tatil destinasyonlarından biridir. Side, Aspendos, Perge gibi antik kentler ve Düden Şelalesi gibi doğal güzellikler görülmeye değerdir.',
-    priceRange: '450₺-1.800₺',
-    accommodationType: 'Resort',
-    images: ['/images/destinations/antalya.jpg'],
-  },
-  {
-    id: "4",
-    name: 'Bodrum',
-    country: 'Türkiye',
-    city: 'Muğla',
-    rating: 4.6,
-    shortDescription: 'Masmavi koyları ve canlı gece hayatıyla ünlü cennet',
-    description: 'Bodrum, beyaz badanalı evleri, muhteşem koyları, canlı gece hayatı ve tarihi kalesiyle ünlüdür. Turkuaz rengi denizi, lüks marinalar ve zengin mutfağıyla yerli ve yabancı turistlerin gözdesidir.',
-    priceRange: '600₺-2.000₺',
-    accommodationType: 'Apart Otel',
-    images: ['/images/destinations/bodrum.jpg'],
-  },
-];
+// Listing tipi tanımlaması
+type ListingImage = {
+  id: string;
+  url: string;
+  caption: string | null;
+  isPrimary: boolean;
+};
+
+type Listing = {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  capacity: number;
+  location: string;
+  latitude: number | null;
+  longitude: number | null;
+  amenities: string[];
+  category: string;
+  images: ListingImage[];
+  averageRating: number | null;
+  reviewCount: number;
+  createdAt: string;
+};
 
 // Recommended experiences
 const experiences = [
@@ -91,36 +65,64 @@ const experiences = [
   },
 ];
 
-// Create map markers for popular destinations
-const mapLocations = [
-  {
-    position: [41.0082, 28.9784] as LatLngExpression,
-    name: "İstanbul",
-    description: "Turkey's cultural and historical center with stunning architecture."
-  },
-  {
-    position: [38.6431, 34.8307] as LatLngExpression,
-    name: "Kapadokya",
-    description: "Famous for its unique rock formations and hot air balloon rides."
-  },
-  {
-    position: [36.8969, 30.7133] as LatLngExpression,
-    name: "Antalya",
-    description: "Beautiful coastal city with beaches and ancient ruins."
-  },
-  {
-    position: [37.8750, 27.2530] as LatLngExpression,
-    name: "Ephesus",
-    description: "Ancient Greek city with well-preserved ruins."
-  },
-  {
-    position: [39.9334, 32.8597] as LatLngExpression,
-    name: "Ankara",
-    description: "The capital city of Turkey with modern attractions."
-  }
-];
-
 const HomePage: React.FC = () => {
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [mapLocations, setMapLocations] = useState<any[]>([]);
+  const [searchParams, setSearchParams] = useState({
+    location: '',
+    date: '',
+    guests: '',
+  });
+
+  // İlanları API'den çek
+  useEffect(() => {
+    const fetchListings = async () => {
+      try {
+        setIsLoading(true);
+        const response = await get<{ listings: Listing[] }>('/listings');
+        setListings(response.listings);
+        
+        // Harita konumlarını güncelle
+        const locations = response.listings
+          .filter(listing => listing.latitude && listing.longitude)
+          .map(listing => ({
+            position: [listing.latitude, listing.longitude] as LatLngExpression,
+            name: listing.title,
+            description: listing.description ? listing.description.substring(0, 80) + '...' : 'Açıklama yok',
+            id: listing.id
+          }));
+          
+        setMapLocations(locations);
+      } catch (error) {
+        console.error('İlanlar alınırken hata oluştu:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchListings();
+  }, []);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setSearchParams(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Arama parametreleriyle arama sayfasına yönlendirme için hazırlık
+    const queryParams = new URLSearchParams();
+    if (searchParams.location) queryParams.append('location', searchParams.location);
+    if (searchParams.date) queryParams.append('date', searchParams.date);
+    if (searchParams.guests) queryParams.append('guests', searchParams.guests);
+    
+    // Gerçek yönlendirme işlemi burada yapılabilir
+    console.log(`/search?${queryParams.toString()}`);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -143,37 +145,46 @@ const HomePage: React.FC = () => {
                 Eşsiz destinasyonları keşfedin ve dünya genelinde unutulmaz anılar biriktirin.
               </p>
               <div className="bg-white dark:bg-gray-800 rounded-lg p-3 md:p-4 shadow-lg max-w-2xl mx-auto">
-                <div className="grid md:grid-cols-4 gap-3">
+                <form onSubmit={handleSearch} className="grid md:grid-cols-4 gap-3">
                   <div className="flex items-center border rounded-md px-3 py-2 bg-white dark:bg-gray-700">
                     <BiGlobe className="text-primary mr-2" />
                     <input
                       type="text"
+                      name="location"
                       placeholder="Nereye?"
                       className="w-full bg-transparent focus:outline-none"
+                      value={searchParams.location}
+                      onChange={handleSearchChange}
                     />
                   </div>
                   <div className="flex items-center border rounded-md px-3 py-2 bg-white dark:bg-gray-700">
                     <BiCalendar className="text-primary mr-2" />
                     <input
                       type="text"
+                      name="date"
                       placeholder="Ne zaman?"
                       className="w-full bg-transparent focus:outline-none"
+                      value={searchParams.date}
+                      onChange={handleSearchChange}
                     />
                   </div>
                   <div className="flex items-center border rounded-md px-3 py-2 bg-white dark:bg-gray-700">
                     <BiUser className="text-primary mr-2" />
                     <input
                       type="text"
+                      name="guests"
                       placeholder="Kişi sayısı"
                       className="w-full bg-transparent focus:outline-none"
+                      value={searchParams.guests}
+                      onChange={handleSearchChange}
                     />
                   </div>
-                  <button className="btn btn-primary w-full">
+                  <button type="submit" className="btn btn-primary w-full">
                     <BiSearch className="mr-2" />
                     Ara
                   </button>
-                </div>
-            </div>
+                </form>
+              </div>
             </motion.div>
           </div>
         </section>
@@ -216,25 +227,54 @@ const HomePage: React.FC = () => {
             >
               <h2 className="text-2xl md:text-3xl font-bold mb-4">Popüler Destinasyonlar</h2>
               <p className="text-text-light max-w-2xl mx-auto">
-                Dünya çapında en çok sevilen destinasyonları keşfedin
+                En çok tercih edilen konaklama seçeneklerini keşfedin
               </p>
             </motion.div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {demoDestinations.map((destination) => (
-                <motion.div
-                  key={destination.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  viewport={{ once: true }}
-                >
-                  <Link href={`/destination/${destination.id}`}>
-                <DestinationCard destination={destination} />
-                  </Link>
-                </motion.div>
-              ))}
+            {isLoading ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[...Array(4)].map((_, i) => (
+                  <div 
+                    key={i} 
+                    className="bg-gray-100 dark:bg-gray-800 rounded-lg h-72 animate-pulse"
+                  />
+                ))}
               </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {listings.slice(0, 4).map((listing) => (
+                  <motion.div
+                    key={listing.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    viewport={{ once: true }}
+                  >
+                    <Link href={`/destination/${listing.id}`}>
+                      <DestinationCard 
+                        destination={{
+                          id: listing.id,
+                          name: listing.title,
+                          location: listing.location,
+                          rating: listing.averageRating || 0,
+                          shortDescription: listing.description ? listing.description.substring(0, 100) + '...' : 'Açıklama yok',
+                          priceRange: `${listing.price}₺`,
+                          images: listing.images && Array.isArray(listing.images) ? listing.images.map(img => img.url) : [],
+                        }} 
+                      />
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+            
+            {listings.length > 0 && (
+              <div className="text-center mt-10">
+                <Link href="/search" className="btn btn-outline">
+                  Tümünü Gör
+                </Link>
+              </div>
+            )}
           </div>
         </section>
         
@@ -287,108 +327,83 @@ const HomePage: React.FC = () => {
                 transition={{ duration: 0.7 }}
                 viewport={{ once: true }}
               >
-                <div className="relative h-[400px] rounded-lg overflow-hidden">
-                  <Image
-                    src="/images/travel-planning.jpg"
-                    alt="Seyahat planlaması"
-                    fill
-                    style={{ objectFit: 'cover' }}
-                    className="rounded-lg"
-                  />
+                <h2 className="text-2xl md:text-3xl font-bold mb-6">Neden TripSync?</h2>
+                <div className="space-y-4">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                        <BiStar className="text-primary" />
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <h3 className="text-lg font-semibold mb-1">Güvenilir İncelemeler</h3>
+                      <p className="text-text-light">Gerçek kullanıcılardan gelen dürüst değerlendirmelerle en iyi deneyimi yaşayın.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                        <BiStar className="text-primary" />
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <h3 className="text-lg font-semibold mb-1">Benzersiz Deneyimler</h3>
+                      <p className="text-text-light">Sıradan turizm deneyimlerinin ötesinde, yerel kültürle iç içe seyahat fırsatları.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                        <BiStar className="text-primary" />
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <h3 className="text-lg font-semibold mb-1">7/24 Destek</h3>
+                      <p className="text-text-light">Seyahatinizin her anında size destek olmaya hazır müşteri hizmetleri.</p>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
+              
               <motion.div
                 initial={{ opacity: 0, x: 30 }}
                 whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.7 }}
+                transition={{ duration: 0.7, delay: 0.2 }}
                 viewport={{ once: true }}
+                className="relative h-80 md:h-96 rounded-lg overflow-hidden shadow-lg"
               >
-                <h2 className="text-2xl md:text-3xl font-bold mb-6">Neden Bizi Seçmelisiniz</h2>
-                <div className="space-y-6">
-                  <div>
-                    <div className="flex items-start">
-                      <div className="mr-4 mt-1 bg-primary/10 p-2 rounded-full">
-                        <BiStar className="text-primary" size={22} />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold mb-2">Özenle Seçilmiş Destinasyonlar</h3>
-                        <p className="text-text-light">
-                          Otantik deneyimler için en iyi destinasyonları özenle seçiyoruz.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex items-start">
-                      <div className="mr-4 mt-1 bg-primary/10 p-2 rounded-full">
-                        <BiUser className="text-primary" size={22} />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold mb-2">Kişiselleştirilmiş Planlar</h3>
-                        <p className="text-text-light">
-                          Tercihlerinize ve ilgi alanlarınıza göre özelleştirilmiş seyahat planları.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex items-start">
-                      <div className="mr-4 mt-1 bg-primary/10 p-2 rounded-full">
-                        <BiGlobe className="text-primary" size={22} />
-              </div>
-                      <div>
-                        <h3 className="text-lg font-semibold mb-2">Yerel Bilgi</h3>
-                        <p className="text-text-light">
-                          Destinasyonları en iyi bilen yerel uzmanlardan tavsiyeler alın.
-                        </p>
-              </div>
-              </div>
-              </div>
-              </div>
+                <Image
+                  src="/globe.svg"
+                  alt="Neden Bizi Seçmelisiniz"
+                  fill
+                  style={{ objectFit: "cover" }}
+                  className="rounded-lg bg-gray-100"
+                  unoptimized
+                  onError={(e) => {
+                    // Fallback to a default image if the target image doesn't exist
+                    const target = e.target as HTMLImageElement;
+                    target.src = "/globe.svg";
+                  }}
+                />
               </motion.div>
             </div>
           </div>
         </section>
+        
+        <section className="py-12 md:py-16 bg-background">
+          <div className="container mx-auto px-4 md:px-6 text-center">
+            <h2 className="text-2xl md:text-3xl font-bold mb-6">Hemen Maceraya Başlayın</h2>
+            <p className="text-text-light max-w-2xl mx-auto mb-8">
+              Hayalinizdeki tatil sizi bekliyor. İster kısa bir kaçamak, ister uzun bir seyahat planlıyor olun, size uygun seçenekleri keşfedin.
+            </p>
+            <Link href="/search" className="btn btn-primary">
+              Şimdi Keşfet
+            </Link>
+          </div>
+        </section>
       </main>
-      
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <h3 className="text-xl font-semibold mb-4 text-primary-light">TripSync</h3>
-              <p className="text-gray-300">Hayalinizdeki seyahati bulmanın en kolay yolu.</p>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Hızlı Bağlantılar</h3>
-              <ul className="space-y-3">
-                <li><Link href="#" className="text-gray-300 hover:text-white transition-colors">Hakkımızda</Link></li>
-                <li><Link href="#" className="text-gray-300 hover:text-white transition-colors">Gizlilik Politikası</Link></li>
-                <li><Link href="#" className="text-gray-300 hover:text-white transition-colors">Kullanım Şartları</Link></li>
-                <li><Link href="#" className="text-gray-300 hover:text-white transition-colors">İletişim</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Bizi Takip Edin</h3>
-              <div className="flex space-x-4">
-                <Link href="#" className="text-gray-300 hover:text-white transition-colors">
-                  <span>Facebook</span>
-                </Link>
-                <Link href="#" className="text-gray-300 hover:text-white transition-colors">
-                  <span>Twitter</span>
-                </Link>
-                <Link href="#" className="text-gray-300 hover:text-white transition-colors">
-                  <span>Instagram</span>
-                </Link>
-              </div>
-            </div>
-          </div>
-          <div className="mt-8 pt-8 border-t border-gray-700 text-center">
-            <p className="text-gray-300">&copy; {new Date().getFullYear()} TripSync. Tüm hakları saklıdır.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };
 
-export default HomePage; 
+export default HomePage;

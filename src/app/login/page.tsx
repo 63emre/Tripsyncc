@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -8,10 +8,12 @@ import Input from '@/components/Input';
 import Button from '@/components/Button';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useTheme } from '@/components/ThemeProviderClient';
+import { useAuth } from '@/contexts/AuthContext';
 
 const LoginPage: React.FC = () => {
   const router = useRouter();
   const { theme } = useTheme();
+  const { login, isAuthenticated } = useAuth();
   const isDarkMode = theme === 'dark';
   
   const [formData, setFormData] = useState({
@@ -22,7 +24,17 @@ const LoginPage: React.FC = () => {
   const [errors, setErrors] = useState({
     email: '',
     password: '',
+    general: '',
   });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Kullanıcı zaten giriş yapmışsa anasayfaya yönlendir
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/home');
+    }
+  }, [isAuthenticated, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -36,15 +48,16 @@ const LoginPage: React.FC = () => {
       setErrors({
         ...errors,
         [name]: '',
+        general: '',
       });
     }
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     let valid = true;
-    const newErrors = { ...errors };
+    const newErrors = { ...errors, general: '' };
     
     // Basic validation
     if (!formData.email) {
@@ -65,8 +78,31 @@ const LoginPage: React.FC = () => {
       return;
     }
     
-    // If valid, redirect to home page (normally would authenticate)
-    router.push('/home');
+    setIsSubmitting(true);
+    
+    try {
+      // AuthContext üzerinden login fonksiyonunu çağır
+      const result = await login(formData.email, formData.password);
+      
+      if (!result.success) {
+        setErrors({
+          ...errors,
+          general: result.error || 'Giriş başarısız. Bilgilerinizi kontrol edin ve tekrar deneyin.',
+        });
+        return;
+      }
+      
+      // Başarılı giriş durumunda anasayfaya yönlendir
+      router.push('/home');
+    } catch (error) {
+      console.error('Login error:', error);
+      setErrors({
+        ...errors,
+        general: 'Giriş sırasında beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Her harf için animasyon varyantları
@@ -180,6 +216,12 @@ const LoginPage: React.FC = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 1, duration: 0.5 }}
         >
+          {errors.general && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+              <span className="block sm:inline">{errors.general}</span>
+            </div>
+          )}
+          
           <Input
             label="E-posta Adresi"
             type="email"
@@ -215,14 +257,18 @@ const LoginPage: React.FC = () => {
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
           >
-            <Button type="submit" className="w-full">
-              Giriş Yap
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? 'Giriş Yapılıyor...' : 'Giriş Yap'}
             </Button>
           </motion.div>
+          
+          <div className="text-center mt-4 text-sm text-gray-500">
+            <p>Demo hesabıyla giriş yapın: demo@demo.com / 1234</p>
+          </div>
         </motion.form>
       </motion.div>
     </div>
   );
 };
 
-export default LoginPage; 
+export default LoginPage;

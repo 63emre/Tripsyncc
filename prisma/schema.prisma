@@ -1,0 +1,164 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Kullanıcı modeli
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // İlişkiler
+  profile       Profile?
+  ownedListings Listing[]    @relation("ListingOwner")
+  bookings      Booking[]    @relation("BookingUser")
+  reviews       Review[]     @relation("ReviewAuthor") 
+  favorites     Favorite[]
+  sentMessages  Message[]    @relation("MessageSender")
+  recvMessages  Message[]    @relation("MessageReceiver")
+  friendsAdded  Friendship[] @relation("FriendshipRequester")
+  friendsOf     Friendship[] @relation("FriendshipAddressee")
+}
+
+// Kullanıcı profili
+model Profile {
+  id          String    @id @default(uuid())
+  bio         String?
+  avatar      String?
+  phoneNumber String?
+  address     String?
+  city        String?
+  country     String?
+  dateOfBirth DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // İlişkiler
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+}
+
+// İlan modeli
+model Listing {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  price       Float
+  capacity    Int
+  location    String
+  latitude    Float?
+  longitude   Float?
+  amenities   String[] // JSON dizi olarak saklanır
+  category    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // İlişkiler
+  owner     User           @relation("ListingOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId   String
+  images    ListingImage[]
+  bookings  Booking[]
+  reviews   Review[]
+  favorites Favorite[]
+}
+
+// İlan görüntüleri
+model ListingImage {
+  id        String   @id @default(uuid())
+  url       String
+  caption   String?
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // İlişkiler
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId String
+}
+
+// Rezervasyonlar
+model Booking {
+  id         String   @id @default(uuid())
+  startDate  DateTime
+  endDate    DateTime
+  totalPrice Float
+  status     String   @default("pending") // pending, confirmed, cancelled, completed
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // İlişkiler
+  user      User    @relation("BookingUser", fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId String
+}
+
+// Değerlendirmeler
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  // İlişkiler
+  author    User    @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  authorId  String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId String
+}
+
+// Favoriler
+model Favorite {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  // İlişkiler
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId String
+
+  // Her kullanıcı için bir ilan yalnızca bir kez favori olabilir
+  @@unique([userId, listingId])
+}
+
+// Mesajlar
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // İlişkiler
+  sender     User   @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  senderId   String
+  receiver   User   @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  receiverId String
+}
+
+// Arkadaşlıklar
+model Friendship {
+  id        String   @id @default(uuid())
+  status    String   @default("pending") // pending, accepted, rejected
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // İlişkiler - İsteyen ve istenen kişi
+  requester   User   @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  requesterId String
+  addressee   User   @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+  addresseeId String
+
+  // Her iki kullanıcı arasında yalnızca bir arkadaşlık kaydı olabilir
+  @@unique([requesterId, addresseeId])
+}

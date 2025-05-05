@@ -18,6 +18,7 @@ const NewListingPage: React.FC = () => {
     capacity: '',
     roomCount: '',
     description: '',
+    category: 'apartment', // Default category
     amenities: {
       wifi: false,
       kitchen: false,
@@ -38,7 +39,13 @@ const NewListingPage: React.FC = () => {
     capacity: '',
     roomCount: '',
     description: '',
+    photos: '',
   });
+
+  // Add state for photos
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [photosPreviews, setPhotosPreviews] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -67,7 +74,48 @@ const NewListingPage: React.FC = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      
+      // Validate file types and sizes
+      const validFiles = files.filter(file => {
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        const validSize = 10 * 1024 * 1024; // 10MB
+        
+        return validTypes.includes(file.type) && file.size <= validSize;
+      });
+      
+      if (validFiles.length !== files.length) {
+        setErrors({
+          ...errors,
+          photos: 'Bazı dosyalar geçersiz. Lütfen dosya türü ve boyutunu kontrol edin.'
+        });
+      } else {
+        setErrors({
+          ...errors,
+          photos: ''
+        });
+      }
+      
+      // Create preview URLs and update state
+      const newPreviews = validFiles.map(file => URL.createObjectURL(file));
+      
+      // Update state
+      setPhotos(prevPhotos => [...prevPhotos, ...validFiles]);
+      setPhotosPreviews(prevPreviews => [...prevPreviews, ...newPreviews]);
+    }
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos(photos.filter((_, i) => i !== index));
+    
+    // Revoke the object URL to avoid memory leaks
+    URL.revokeObjectURL(photosPreviews[index]);
+    setPhotosPreviews(photosPreviews.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     let valid = true;
@@ -128,15 +176,93 @@ const NewListingPage: React.FC = () => {
       valid = false;
     }
     
+    if (photos.length === 0) {
+      newErrors.photos = 'En az bir fotoğraf yüklemelisiniz';
+      valid = false;
+    }
+    
     if (!valid) {
       setErrors(newErrors);
       return;
     }
     
-    // Form is valid, submit logic would go here
+    // Form is valid, submit to API
+    setIsSubmitting(true);
     
-    // Redirect to home
-    router.push('/home');
+    try {
+      // Step 1: Create the listing
+      const location = `${formData.address}, ${formData.city}, ${formData.country}, ${formData.postalCode}`;
+      
+      // Convert amenities object to array format expected by API
+      const amenitiesArray = Object.entries(formData.amenities)
+        .filter(([_, value]) => value)
+        .map(([key]) => key);
+      
+      const listingResponse = await fetch('/api/listings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          price: Number(formData.price),
+          capacity: Number(formData.capacity),
+          roomCount: Number(formData.roomCount),
+          location: location,
+          category: formData.category,
+          amenities: amenitiesArray
+        })
+      });
+      
+      if (!listingResponse.ok) {
+        throw new Error('İlan oluşturma başarısız oldu');
+      }
+      
+      const listingData = await listingResponse.json();
+      const listingId = listingData.listing.id;
+      
+      // Step 2: Upload photos for the listing
+      const uploadPromises = photos.map(async (photo, index) => {
+        const formData = new FormData();
+        formData.append('file', photo);
+        formData.append('listingId', listingId);
+        formData.append('isPrimary', index === 0 ? 'true' : 'false'); // First photo is primary
+        
+        const photoResponse = await fetch('/api/uploads/listing', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: formData
+        });
+        
+        if (!photoResponse.ok) {
+          throw new Error(`Fotoğraf ${index + 1} yüklenemedi`);
+        }
+        
+        return photoResponse.json();
+      });
+      
+      await Promise.all(uploadPromises);
+      
+      // Success! Redirect to new listing
+      router.push(`/destination/${listingId}`);
+    } catch (error) {
+      console.error('Submission error:', error);
+      alert('İlan oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle category change
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFormData({
+      ...formData,
+      category: e.target.value
+    });
   };
 
   return (
@@ -392,7 +518,7 @@ const NewListingPage: React.FC = () => {
                           className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
                         >
                           <span>Fotoğraf Yükle</span>
-                          <input id="file-upload" name="file-upload" type="file" className="sr-only" multiple />
+                          <input id="file-upload" name="file-upload" type="file" className="sr-only" multiple onChange={handleFileChange} />
                         </label>
                         <p className="pl-1">veya sürükleyip bırakın</p>
                       </div>
@@ -401,6 +527,23 @@ const NewListingPage: React.FC = () => {
                       </p>
                     </div>
                   </div>
+                  {photosPreviews.length > 0 && (
+                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {photosPreviews.map((preview, index) => (
+                        <div key={index} className="relative">
+                          <img src={preview} alt={`Photo ${index + 1}`} className="w-full h-32 object-cover rounded-md" />
+                          <button
+                            type="button"
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
+                            onClick={() => removePhoto(index)}
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {errors.photos && <p className="mt-2 text-sm text-red-500">{errors.photos}</p>}
                 </div>
               </div>
               
@@ -415,8 +558,8 @@ const NewListingPage: React.FC = () => {
                   >
                     İptal
                   </Button>
-                  <Button type="submit">
-                    İlanı Yayınla
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? 'Yükleniyor...' : 'İlanı Yayınla'}
                   </Button>
                 </div>
               </div>
@@ -428,4 +571,4 @@ const NewListingPage: React.FC = () => {
   );
 };
 
-export default NewListingPage; 
+export default NewListingPage;
