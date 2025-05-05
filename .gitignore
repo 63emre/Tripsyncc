@@ -30,8 +30,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +40,28 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# uploaded files - keep folder structure but not the files
+/public/uploads/**/*.jpg
+/public/uploads/**/*.jpeg
+/public/uploads/**/*.png
+/public/uploads/**/*.gif
+/public/uploads/**/*.webp
+!/public/uploads/listings/.gitkeep
+!/public/uploads/profiles/.gitkeep
+
+# IDE specific files
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# OS specific
+Thumbs.db
+desktop.ini
+
+# Prisma
+/prisma/dev.db
+/prisma/dev.db-journal
